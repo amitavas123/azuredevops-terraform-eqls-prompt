@@ -34,9 +34,9 @@ resource "azurerm_linux_virtual_machine" "main" {
   name                = "${var.resource_name_prefix}-vm"
   location            = var.location
   resource_group_name = var.resource_group_name
-  size             = var.vm_size
+  size                = var.vm_size
 
-  admin_username = var.vm_admin_username
+  admin_username      = var.vm_admin_username
 
   # Disable password authentication and use SSH keys only
   disable_password_authentication = true
