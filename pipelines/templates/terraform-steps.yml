@@ -8,10 +8,10 @@ parameters:
 
 steps:
   # Set up Terraform environment
-  - task: UseTerraformVersion@0
-    inputs:
-      version: '$(terraformVersion)'
-    displayName: 'Setup Terraform $(terraformVersion)'
+  #- task: UseTerraformVersion@0
+  #  inputs:
+  #    version: '$(terraformVersion)'
+  #  displayName: 'Setup Terraform $(terraformVersion)'
 
   # Download SSH Key from secure files
   - task: DownloadSecureFile@1
