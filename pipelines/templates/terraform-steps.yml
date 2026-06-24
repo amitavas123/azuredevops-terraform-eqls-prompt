@@ -7,36 +7,44 @@ parameters:
       - apply
 
 steps:
-  # Set up Terraform environment
-  #- task: UseTerraformVersion@0
-  #  inputs:
-  #    version: '$(terraformVersion)'
-  #  displayName: 'Setup Terraform $(terraformVersion)'
 
-  # Download SSH Key from secure files
+  # Install Terraform (ubuntu-latest no longer includes it)
+  - script: |
+      sudo apt-get update -y
+      sudo apt-get install -y wget unzip
+      wget https://releases.hashicorp.com/terraform/1.5.0/terraform_1.5.0_linux_amd64.zip
+      unzip terraform_1.5.0_linux_amd64.zip
+      sudo mv terraform /usr/local/bin/
+      terraform version
+    displayName: "Install Terraform 1.5.0"
+
+  # Download SSH Key
   - task: DownloadSecureFile@1
     name: sshKey
     inputs:
       secureFile: 'id_rsa'
     displayName: 'Download SSH Private Key'
 
-  # Setup SSH key permissions
+  # Configure SSH Key
   - script: |
       mkdir -p ~/.ssh
       cp $(sshKey.secureFilePath) ~/.ssh/id_rsa
       chmod 600 ~/.ssh/id_rsa
-      cat $(sshKey.secureFilePath).pub > ~/.ssh/id_rsa.pub
+      # Only create pub file if it exists
+      if [ -f "$(sshKey.secureFilePath).pub" ]; then
+        cp $(sshKey.secureFilePath).pub ~/.ssh/id_rsa.pub
+      fi
     displayName: 'Configure SSH Key'
     condition: ne('${{ parameters.step }}', 'validate')
 
-  # Initialize Terraform with remote backend
+  # Terraform Init
   - script: |
       cd $(terraformWorkingDirectory)
       terraform init \
-        -backend-config="resource_group_name=$(backendResourceGroup)" \
-        -backend-config="storage_account_name=$(backendStorageAccount)" \
-        -backend-config="container_name=$(backendContainer)" \
-        -backend-config="key=$(backendKey)" \
+        -backend-config="resource_group_name=$backendResourceGroup" \
+        -backend-config="storage_account_name=$backendStorageAccount" \
+        -backend-config="container_name=$backendContainer" \
+        -backend-config="key=$backendKey" \
         -no-color
     displayName: 'Terraform Init'
     env:
@@ -69,7 +77,7 @@ steps:
       cd $(terraformWorkingDirectory)
       terraform plan \
         -var-file="env/dev/dev.tfvars" \
-        -var="subscription_id=$(ARM_SUBSCRIPTION_ID)" \
+        -var="subscription_id=$ARM_SUBSCRIPTION_ID" \
         -var="public_key_path=~/.ssh/id_rsa.pub" \
         -no-color \
         -out=tfplan
@@ -81,7 +89,7 @@ steps:
       ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
       ARM_TENANT_ID: $(ARM_TENANT_ID)
 
-  # Save plan as artifact
+  # Publish plan
   - task: PublishBuildArtifacts@1
     inputs:
       PathtoPublish: $(terraformWorkingDirectory)/tfplan
@@ -95,7 +103,7 @@ steps:
       cd $(terraformWorkingDirectory)
       terraform apply \
         -var-file="env/dev/dev.tfvars" \
-        -var="subscription_id=$(ARM_SUBSCRIPTION_ID)" \
+        -var="subscription_id=$ARM_SUBSCRIPTION_ID" \
         -var="public_key_path=~/.ssh/id_rsa.pub" \
         -no-color \
         -auto-approve
@@ -107,7 +115,7 @@ steps:
       ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
       ARM_TENANT_ID: $(ARM_TENANT_ID)
 
-  # Save Terraform outputs as artifact
+  # Export outputs
   - script: |
       cd $(terraformWorkingDirectory)
       terraform output -json > terraform-outputs.json
