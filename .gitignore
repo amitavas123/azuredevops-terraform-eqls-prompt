@@ -1,0 +1,53 @@
+# Terraform State Files
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# Terraform Working Directories
+.terraform/
+.terraform.d/
+
+# IDE and Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Local SSH Keys (IMPORTANT: Never commit private keys)
+!*.pub
+*.pem
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+
+# Local tfvars overrides
+*.auto.tfvars
+*.auto.tfvars.json
+local.tfvars
+
+# Environment files
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Build artifacts
+dist/
+build/
+
+# Dependency directories (if any)
+vendor/
+node_modules/
+
+# Azure CLI cache
+.azure/
+
+# Backup files
+*.bak
+*.backup

@@ -1,0 +1,91 @@
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    include:
+      - terraform/**
+      - pipelines/**
+      - scripts/**
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  terraformWorkingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+  backendResourceGroup: '$(BACKEND_RESOURCE_GROUP)'
+  backendStorageAccount: '$(BACKEND_STORAGE_ACCOUNT)'
+  backendContainer: '$(BACKEND_CONTAINER)'
+  backendKey: 'terraform.tfstate'
+  terraformVersion: '1.5.0'
+  environment: 'dev'
+
+stages:
+  # Stage 1: Validate and Format Check
+  - stage: Validate
+    displayName: 'Terraform Validate & Format'
+    jobs:
+      - job: ValidateFormat
+        displayName: 'Validate Terraform Configuration'
+        steps:
+          - template: templates/terraform-steps.yml
+            parameters:
+              step: 'validate'
+
+  # Stage 2: Plan
+  - stage: Plan
+    displayName: 'Terraform Plan'
+    dependsOn: Validate
+    condition: succeeded()
+    jobs:
+      - job: TerraformPlan
+        displayName: 'Create Terraform Plan'
+        steps:
+          - template: templates/terraform-steps.yml
+            parameters:
+              step: 'plan'
+
+  # Stage 3: Apply
+  - stage: Apply
+    displayName: 'Terraform Apply'
+    dependsOn: Plan
+    condition: succeeded()
+    jobs:
+      - deployment: TerraformApply
+        displayName: 'Apply Terraform Configuration'
+        environment: 'Azure-$(environment)'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: templates/terraform-steps.yml
+                  parameters:
+                    step: 'apply'
+                - script: |
+                    echo "Terraform Apply completed successfully"
+                    echo "Retrieving VM outputs..."
+                    VM_PUBLIC_IP=$(terraform output -raw vm_public_ip)
+                    VM_ADMIN_USERNAME=$(terraform output -raw vm_admin_username)
+                    echo "##vso[task.setvariable variable=VM_PUBLIC_IP]${VM_PUBLIC_IP}"
+                    echo "##vso[task.setvariable variable=VM_ADMIN_USERNAME]${VM_ADMIN_USERNAME}"
+                    echo "VM Public IP: ${VM_PUBLIC_IP}"
+                    echo "VM Admin Username: ${VM_ADMIN_USERNAME}"
+                  workingDirectory: $(terraformWorkingDirectory)
+                  displayName: 'Extract Terraform Outputs'
+
+  # Stage 4: VM Health Check
+  - stage: VMHealthCheck
+    displayName: 'VM Health Check'
+    dependsOn: Apply
+    condition: succeeded()
+    jobs:
+      - template: templates/vm-health-check.yml
+        parameters:
+          vmPublicIp: '$(VM_PUBLIC_IP)'
+          vmAdminUsername: '$(VM_ADMIN_USERNAME)'

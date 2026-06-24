@@ -1,0 +1,112 @@
+jobs:
+  - job: VMHealthCheck
+    displayName: 'Health Check VM Installation'
+    steps:
+      # Download SSH Key
+      - task: DownloadSecureFile@1
+        name: sshKey
+        inputs:
+          secureFile: 'id_rsa'
+        displayName: 'Download SSH Private Key'
+
+      # Setup SSH key permissions
+      - script: |
+          mkdir -p ~/.ssh
+          cp $(sshKey.secureFilePath) ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ parameters.vmPublicIp }} >> ~/.ssh/known_hosts 2>/dev/null || true
+        displayName: 'Configure SSH for VM Access'
+
+      # Copy check_processes script to agent
+      - task: CopyFiles@2
+        inputs:
+          SourceFolder: '$(System.DefaultWorkingDirectory)/scripts'
+          Contents: 'check_processes.sh'
+          TargetFolder: '$(Agent.TempDirectory)'
+        displayName: 'Copy Health Check Script'
+
+      # Make script executable
+      - script: |
+          chmod +x $(Agent.TempDirectory)/check_processes.sh
+        displayName: 'Make Script Executable'
+
+      # Wait for VM to be ready (with retries)
+      - script: |
+          echo "Waiting for VM to be ready..."
+          MAX_RETRIES=30
+          RETRY_COUNT=0
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            if ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no ${{ parameters.vmAdminUsername }}@${{ parameters.vmPublicIp }} "echo 'VM is ready'" > /dev/null 2>&1; then
+              echo "VM is ready for configuration"
+              exit 0
+            fi
+            echo "Waiting for VM... (Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)"
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            sleep 10
+          done
+          
+          echo "VM did not become ready within expected time"
+          exit 1
+        displayName: 'Wait for VM SSH Readiness'
+
+      # Install nginx on the VM
+      - script: |
+          ssh -o StrictHostKeyChecking=no ${{ parameters.vmAdminUsername }}@${{ parameters.vmPublicIp }} << 'EOF'
+          set -e
+          echo "Installing nginx..."
+          sudo apt-get update -y
+          sudo apt-get install -y nginx
+          echo "Starting nginx service..."
+          sudo systemctl start nginx
+          sudo systemctl enable nginx
+          echo "Nginx installation and start completed"
+          EOF
+        displayName: 'Install and Start Nginx'
+
+      # Execute health check script on VM
+      - script: |
+          echo "Running health check on VM..."
+          
+          # Check if nginx service is active
+          echo "Checking nginx service status..."
+          ssh -o StrictHostKeyChecking=no ${{ parameters.vmAdminUsername }}@${{ parameters.vmPublicIp }} \
+            'sudo systemctl is-active nginx' || (echo "Nginx service is not active"; exit 1)
+          
+          echo "Nginx service is active"
+        displayName: 'Verify Nginx Service Status'
+
+      # Check if nginx process is running
+      - script: |
+          echo "Checking if nginx process is running..."
+          ssh -o StrictHostKeyChecking=no ${{ parameters.vmAdminUsername }}@${{ parameters.vmPublicIp }} \
+            'pgrep nginx > /dev/null && echo "Nginx process found" || (echo "Nginx process not found"; exit 1)'
+        displayName: 'Verify Nginx Process'
+
+      # Check port 22 (SSH) connectivity
+      - script: |
+          echo "Checking SSH port (22) connectivity..."
+          nc -zv -w 5 ${{ parameters.vmPublicIp }} 22 || (echo "SSH port is not accessible"; exit 1)
+          echo "SSH port (22) is accessible"
+        displayName: 'Verify SSH Port Connectivity'
+
+      # Optional: Check port 80 (HTTP)
+      - script: |
+          echo "Checking HTTP port (80) connectivity..."
+          nc -zv -w 5 ${{ parameters.vmPublicIp }} 80 || echo "Warning: HTTP port is not accessible (this may be expected)"
+        displayName: 'Verify HTTP Port Connectivity'
+        continueOnError: true
+
+      # Summary report
+      - script: |
+          echo "============================================"
+          echo "VM Health Check Summary"
+          echo "============================================"
+          echo "VM Public IP: ${{ parameters.vmPublicIp }}"
+          echo "VM Admin Username: ${{ parameters.vmAdminUsername }}"
+          echo "✓ SSH connectivity verified"
+          echo "✓ Nginx service is active"
+          echo "✓ Nginx process is running"
+          echo "✓ Port 22 (SSH) is accessible"
+          echo "============================================"
+        displayName: 'Health Check Summary'
