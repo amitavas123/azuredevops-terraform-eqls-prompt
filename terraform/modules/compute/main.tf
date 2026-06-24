@@ -34,7 +34,7 @@ resource "azurerm_linux_virtual_machine" "main" {
   name                = "${var.resource_name_prefix}-vm"
   location            = var.location
   resource_group_name = var.resource_group_name
-  vm_size             = var.vm_size
+  size             = var.vm_size
 
   admin_username = var.vm_admin_username
 
