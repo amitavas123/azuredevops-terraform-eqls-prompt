@@ -16,6 +16,7 @@ steps:
       sudo apt-get install -y wget unzip
       wget --timeout=30 -q https://releases.hashicorp.com/terraform/1.5.0/terraform_1.5.0_linux_amd64.zip
       unzip -o -q terraform_1.5.0_linux_amd64.zip
+      sudo rm -rf /usr/local/bin/terraform
       sudo mv -f terraform /usr/local/bin/
       terraform version
     displayName: "Install Terraform 1.5.0"
