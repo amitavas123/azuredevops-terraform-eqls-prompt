@@ -34,6 +34,7 @@ stages:
       - job: ValidateFormat
         displayName: 'Validate Terraform Configuration'
         steps:
+          - checkout: self
           - template: templates/terraform-steps.yml
             parameters:
               step: 'validate'

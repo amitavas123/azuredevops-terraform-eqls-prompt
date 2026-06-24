@@ -8,6 +8,14 @@ parameters:
 
 steps:
 
+  # Diagnostic step to check directory structure
+  - script: |
+      echo "Current working directory: $(pwd)"
+      echo "System.DefaultWorkingDirectory: $(System.DefaultWorkingDirectory)"
+      echo "Contents of $(System.DefaultWorkingDirectory):"
+      ls -la $(System.DefaultWorkingDirectory)
+    displayName: 'Diagnostic: Check Directory Structure'
+
   # Install Terraform (ubuntu-latest no longer includes it)
   - script: |
       set -e
