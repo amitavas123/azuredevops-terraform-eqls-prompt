@@ -4,7 +4,7 @@ subscription_id  = "ba4d7370-8df0-4392-b5b9-d99d93e39cd7"
 project_prefix   = "ams-"
 environment      = "dev"
 location         = "East US"
-admin_source_ip  = "192.168.20.18/32"  # Change this to your IP for production (e.g., "203.0.113.0/32")
+admin_source_ip  = "192.168.20.18/32" # Change this to your IP for production (e.g., "203.0.113.0/32")
 enable_http      = true
 http_source_cidr = "0.0.0.0/0"
 

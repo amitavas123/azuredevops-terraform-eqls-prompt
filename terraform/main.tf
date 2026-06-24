@@ -13,9 +13,9 @@ locals {
 
 # Create Resource Group
 resource "azurerm_resource_group" "main" {
-  name       = "${local.resource_name_prefix}-rg"
-  location   = var.location
-  tags       = local.common_tags
+  name     = "${local.resource_name_prefix}-rg"
+  location = var.location
+  tags     = local.common_tags
 }
 
 # Network Module
@@ -27,12 +27,12 @@ module "network" {
   location             = azurerm_resource_group.main.location
   resource_name_prefix = local.resource_name_prefix
 
-  vnet_cidr         = var.vnet_cidr
-  app_subnet_cidr   = var.app_subnet_cidr
-  mgmt_subnet_cidr  = var.mgmt_subnet_cidr
-  admin_source_ip   = var.admin_source_ip
-  enable_http       = var.enable_http
-  http_source_cidr  = var.http_source_cidr
+  vnet_cidr        = var.vnet_cidr
+  app_subnet_cidr  = var.app_subnet_cidr
+  mgmt_subnet_cidr = var.mgmt_subnet_cidr
+  admin_source_ip  = var.admin_source_ip
+  enable_http      = var.enable_http
+  http_source_cidr = var.http_source_cidr
 
   tags = local.common_tags
 }
@@ -46,7 +46,7 @@ module "compute" {
   location             = azurerm_resource_group.main.location
   resource_name_prefix = local.resource_name_prefix
 
-  mgmt_subnet_id       = module.network.mgmt_subnet_id
+  mgmt_subnet_id            = module.network.mgmt_subnet_id
   network_security_group_id = module.network.nsg_id
 
   vm_admin_username = var.vm_admin_username
