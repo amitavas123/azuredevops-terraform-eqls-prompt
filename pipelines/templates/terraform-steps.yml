@@ -75,6 +75,10 @@ steps:
       ARM_CLIENT_ID: $(ARM_CLIENT_ID)
       ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
       ARM_TENANT_ID: $(ARM_TENANT_ID)
+      backendResourceGroup: $(backendResourceGroup)
+      backendStorageAccount: $(backendStorageAccount)
+      backendContainer: $(backendContainer)
+      backendKey: $(backendKey)
 
   # Terraform Format Check
   - script: |
