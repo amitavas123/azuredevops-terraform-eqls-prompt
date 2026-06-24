@@ -20,34 +20,45 @@ This document provides step-by-step instructions to set up and run the Terraform
 ```bash
 # Set your Azure subscription ID
 SUBSCRIPTION_ID="YOUR_AZURE_SUBSCRIPTION_ID"
-STORAGE_ACCOUNT_NAME="tfstate$(date +%s)"
-RESOURCE_GROUP="terraform-state-rg"
-LOCATION="eastus"
+--> $env:SUBSCRIPTION_ID = "ba4d7370-8df0-4392-b5b9-d99d93e39cd7"
+--> $env:LOCATION="australiaeast"
+
+echo "SUBSCRIPTION_ID: $env:SUBSCRIPTION_ID"
+echo "LOCATION: $env:LOCATION"
+
+
+$env:STORAGE_ACCOUNT_NAME="tfstate$(date +%s)"
+--> $env:STORAGE_ACCOUNT_NAME="amstfstate$(date +%s)"
+--> $env:RESOURCE_GROUP="terraform-state-eqls-prompt-rg"   XXX at this stage
+
+echo "STORAGE_ACCOUNT_NAME: $env:STORAGE_ACCOUNT_NAME"
+echo "Resource Group: $env:RESOURCE_GROUP"
+
 
 # Set these in the commands below
-echo "Storage Account: $STORAGE_ACCOUNT_NAME"
-echo "Resource Group: $RESOURCE_GROUP"
+
 ```
 
 #### 1.2 Authenticate to Azure
 ```bash
 az login
 az account set --subscription $SUBSCRIPTION_ID
+az account set --subscription ba4d7370-8df0-4392-b5b9-d99d93e39cd7
 ```
 
 #### 1.3 Create Resource Group for Terraform State
 ```bash
 az group create \
-  --name $RESOURCE_GROUP \
-  --location $LOCATION
+  --name $env:RESOURCE_GROUP \
+  --location $env:LOCATION
 ```
 
 #### 1.4 Create Storage Account
 ```bash
 az storage account create \
-  --name $STORAGE_ACCOUNT_NAME \
-  --resource-group $RESOURCE_GROUP \
-  --location $LOCATION \
+  --name $env:STORAGE_ACCOUNT_NAME \
+  --resource-group $env:RESOURCE_GROUP \
+  --location $env:LOCATION \
   --sku Standard_LRS \
   --kind StorageV2 \
   --https-only true \
@@ -57,34 +68,47 @@ az storage account create \
 #### 1.5 Create Storage Container
 ```bash
 az storage container create \
-  --account-name $STORAGE_ACCOUNT_NAME \
+  --account-name $env:STORAGE_ACCOUNT_NAME \
   --name tfstate \
   --auth-mode login
 ```
 
 #### 1.6 Get Storage Account Key
 ```bash
-STORAGE_KEY=$(az storage account keys list \
-  --resource-group $RESOURCE_GROUP \
-  --account-name $STORAGE_ACCOUNT_NAME \
+$env:STORAGE_KEY=$(az storage account keys list \
+  --resource-group $env:RESOURCE_GROUP \
+  --account-name $env:STORAGE_ACCOUNT_NAME \
   --query '[0].value' --output tsv)
 
-echo "Storage Account Key: $STORAGE_KEY"
+echo "Storage Account Key: $env:STORAGE_KEY"
 # Save this! You'll need it for Azure DevOps variables
 ```
 
 #### 1.7 Create Service Principal for Terraform
 ```bash
-SERVICE_PRINCIPAL=$(az ad sp create-for-rbac \
+$env:SERVICE_PRINCIPAL=$(az ad sp create-for-rbac \
   --name terraform-sp-$(date +%s) \
   --role Contributor \
-  --scopes /subscriptions/$SUBSCRIPTION_ID \
+  --scopes /subscriptions/$env:SUBSCRIPTION_ID \
   --output json)
 
 # Extract values
-APP_ID=$(echo $SERVICE_PRINCIPAL | jq -r '.appId')
-PASSWORD=$(echo $SERVICE_PRINCIPAL | jq -r '.password')
-TENANT_ID=$(echo $SERVICE_PRINCIPAL | jq -r '.tenant')
+##APP_ID=$(echo $env:SERVICE_PRINCIPAL | jq -r '.appId')
+##PASSWORD=$(echo $env:SERVICE_PRINCIPAL | jq -r '.password')
+##TENANT_ID=$(echo $env:SERVICE_PRINCIPAL | jq -r '.tenant')
+
+$sp = $env:SERVICE_PRINCIPAL | ConvertFrom-Json
+$APP_ID = $sp.appId
+echo "APP_ID=$APP_ID"
+
+$sp = $env:SERVICE_PRINCIPAL | ConvertFrom-Json
+$PASSWORD = $sp.password
+echo "PASSWORD=$PASSWORD"
+
+$sp = $env:SERVICE_PRINCIPAL | ConvertFrom-Json
+$TENANT = $sp.tenant
+echo "TENANT=$TENANT"
+
 
 echo "============================================"
 echo "Service Principal Details:"
@@ -117,12 +141,13 @@ echo "============================================"
    - **Service Principal Key**: `PASSWORD` from Phase 1
    - **Tenant ID**: `TENANT_ID` from Phase 1
 7. Click **Save**
-8. Name it: `terraform-azure-connection`
+8. Name it: `terraform-azure-connection-eqls`
 
 #### 2.3 Upload SSH Secure File
 1. Go to **Pipelines** → **Library** → **Secure files** (top navigation)
 2. Click **+ Secure file**
-3. Browse and select your **SSH PRIVATE KEY** (`~/.ssh/id_rsa`)
+3. Browse and select your **SSH PRIVATE KEY** (`~/.ssh/id_rsa`) []
+3. Browse and select your **SSH PRIVATE KEY** (`~/.ssh/id_rsa` In Windows: C:\Users\Amitava\.ssh) [Check in Powershell by: Get-ChildItem $env:USERPROFILE\.ssh]
 4. Click **Upload**
 5. Authorize for use in all pipelines (click the file and authorize)
 
