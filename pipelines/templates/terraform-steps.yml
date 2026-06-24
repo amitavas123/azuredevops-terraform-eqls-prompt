@@ -8,27 +8,15 @@ parameters:
 
 steps:
 
-  # Diagnostic step to check directory structure
-  - script: |
-      echo "Current working directory: $(pwd)"
-      echo "System.DefaultWorkingDirectory: $(System.DefaultWorkingDirectory)"
-      echo "terraformWorkingDirectory: $(terraformWorkingDirectory)"
-      echo "===== Contents of System.DefaultWorkingDirectory ====="
-      ls -la $(System.DefaultWorkingDirectory)
-      echo ""
-      echo "===== Check if terraform directory exists ====="
-      if [ -d "$(System.DefaultWorkingDirectory)/terraform" ]; then
-        echo "terraform directory found!"
-        echo "Contents of terraform directory:"
-        ls -la $(System.DefaultWorkingDirectory)/terraform
-      else
-        echo "terraform directory NOT found!"
-        echo "===== Listing root directory contents ====="
-        ls -la /
-        echo "===== Listing /home/vsts/work ====="
-        find /home/vsts/work -type d -name "terraform" 2>/dev/null || echo "No terraform directory found in /home/vsts/work"
-      fi
-    displayName: 'Diagnostic: Check Directory Structure'
+  # Simple diagnostic to see what's available
+  - bash: |
+      echo "===== DIAGNOSTIC START ====="
+      pwd
+      ls -la
+      echo "===== LOOKING FOR TERRAFORM ====="
+      find . -name "main.tf" -type f 2>/dev/null | head -5
+      echo "===== DIAGNOSTIC END ====="
+    displayName: 'Debug: List Files'
 
   # Install Terraform (ubuntu-latest no longer includes it)
   - script: |
