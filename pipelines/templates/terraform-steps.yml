@@ -10,20 +10,24 @@ steps:
 
   # Install Terraform (ubuntu-latest no longer includes it)
   - script: |
+      set -e
+      echo "Downloading Terraform..."
       sudo apt-get update -y
       sudo apt-get install -y wget unzip
-      wget https://releases.hashicorp.com/terraform/1.5.0/terraform_1.5.0_linux_amd64.zip
-      unzip terraform_1.5.0_linux_amd64.zip
+      wget --timeout=30 -q https://releases.hashicorp.com/terraform/1.5.0/terraform_1.5.0_linux_amd64.zip
+      unzip -q terraform_1.5.0_linux_amd64.zip
       sudo mv terraform /usr/local/bin/
       terraform version
     displayName: "Install Terraform 1.5.0"
+    timeoutInMinutes: 5
 
-  # Download SSH Key
+  # Download SSH Key (only needed for plan/apply stages)
   - task: DownloadSecureFile@1
     name: sshKey
     inputs:
       secureFile: 'id_rsa'
     displayName: 'Download SSH Private Key'
+    condition: ne('${{ parameters.step }}', 'validate')
 
   # Configure SSH Key
   - script: |
@@ -40,12 +44,18 @@ steps:
   # Terraform Init
   - script: |
       cd $(terraformWorkingDirectory)
-      terraform init \
-        -backend-config="resource_group_name=$backendResourceGroup" \
-        -backend-config="storage_account_name=$backendStorageAccount" \
-        -backend-config="container_name=$backendContainer" \
-        -backend-config="key=$backendKey" \
-        -no-color
+      if [ "${{ parameters.step }}" = "validate" ]; then
+        echo "Terraform Init (validate mode - no backend)"
+        terraform init -backend=false -no-color
+      else
+        echo "Terraform Init (with backend configuration)"
+        terraform init \
+          -backend-config="resource_group_name=$backendResourceGroup" \
+          -backend-config="storage_account_name=$backendStorageAccount" \
+          -backend-config="container_name=$backendContainer" \
+          -backend-config="key=$backendKey" \
+          -no-color
+      fi
     displayName: 'Terraform Init'
     env:
       ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
