@@ -89,6 +89,11 @@ stages:
                     echo "VM Admin Username: ${VM_ADMIN_USERNAME}"
                   workingDirectory: $(terraformWorkingDirectory)
                   displayName: 'Extract Terraform Outputs'
+                  env:
+                    ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
+                    ARM_CLIENT_ID: $(ARM_CLIENT_ID)
+                    ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
+                    ARM_TENANT_ID: $(ARM_TENANT_ID)
 
   # Stage 4: VM Health Check
   - stage: VMHealthCheck

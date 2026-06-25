@@ -189,11 +189,8 @@ steps:
       terraform output -json > terraform-outputs.json
     displayName: 'Export Terraform Outputs'
     condition: eq('${{ parameters.step }}', 'apply')
-
-  - task: PublishBuildArtifacts@1
-    inputs:
-      PathtoPublish: $(terraformWorkingDirectory)/terraform-outputs.json
-      ArtifactName: 'terraform-outputs'
-      publishLocation: 'Container'
-    displayName: 'Publish Terraform Outputs'
-    condition: eq('${{ parameters.step }}', 'apply')
+    env:
+      ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
+      ARM_CLIENT_ID: $(ARM_CLIENT_ID)
+      ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
+      ARM_TENANT_ID: $(ARM_TENANT_ID)
