@@ -46,7 +46,13 @@ steps:
     env:
       BACKEND_RESOURCE_GROUP: $(BACKEND_RESOURCE_GROUP)
       backendResourceGroup: $(backendResourceGroup)
-      
+
+  - script: |
+      echo "RG:        [$(BACKEND_RESOURCE_GROUP)]"
+      echo "Storage:   [$(BACKEND_STORAGE_ACCOUNT)]"
+      echo "Container: [$(BACKEND_CONTAINER)]"
+    displayName: 'Debug ALL Backend Vars'
+
 
   # Download SSH Key (only needed for plan/apply stages)
   - task: DownloadSecureFile@1
