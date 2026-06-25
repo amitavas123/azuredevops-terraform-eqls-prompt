@@ -67,10 +67,8 @@ steps:
       mkdir -p ~/.ssh
       cp $(sshKey.secureFilePath) ~/.ssh/id_rsa
       chmod 600 ~/.ssh/id_rsa
-      # Only create pub file if it exists
-      if [ -f "$(sshKey.secureFilePath).pub" ]; then
-        cp $(sshKey.secureFilePath).pub ~/.ssh/id_rsa.pub
-      fi
+      ssh-keygen -y -f ~/.ssh/id_rsa > ~/.ssh/id_rsa.pub
+      chmod 644 ~/.ssh/id_rsa.pub
     displayName: 'Configure SSH Key'
     condition: ne('${{ parameters.step }}', 'validate')
 
