@@ -25,7 +25,7 @@ vm_image_version   = "latest"
 
 # SSH Key
 # public_key_path = "~/.ssh/id_rsa.pub"
-ssh_key_name    = "vm-ssh-key"
+ssh_key_name = "vm-ssh-key"
 
 tags = {
   terraform   = "true"
