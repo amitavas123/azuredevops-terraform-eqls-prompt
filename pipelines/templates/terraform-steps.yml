@@ -143,24 +143,14 @@ steps:
       ARM_TENANT_ID: $(ARM_TENANT_ID)
 
   # Terraform Plan
-  # - script: |
-  #     cd $(terraformWorkingDirectory)
-  #     terraform plan \
-  #       -var-file="env/dev/dev.tfvars" \
-  #       -var="subscription_id=$ARM_SUBSCRIPTION_ID" \
-  #       -var="public_key_path=~/.ssh/id_rsa.pub" \
-  #       -no-color \
-  #       -out=tfplan
-
-  #Terraform Plan
   - script: |
-    cd $(terraformWorkingDirectory)
-    terraform plan \
-      -var-file="env/dev/dev.tfvars" \
-      -var="subscription_id=$ARM_SUBSCRIPTION_ID" \
-      -var="public_key_path=$HOME/.ssh/id_rsa.pub" \
-      -no-color \
-      -out=tfplan
+      cd $(terraformWorkingDirectory)
+      terraform plan \
+        -var-file="env/dev/dev.tfvars" \
+        -var="subscription_id=$ARM_SUBSCRIPTION_ID" \
+        -var="public_key_path=$HOME/.ssh/id_rsa.pub" \
+        -no-color \
+        -out=tfplan
     displayName: 'Terraform Plan'
     condition: eq('${{ parameters.step }}', 'plan')
     env:
