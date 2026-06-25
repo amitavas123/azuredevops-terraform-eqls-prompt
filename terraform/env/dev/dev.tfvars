@@ -15,7 +15,7 @@ mgmt_subnet_cidr = "10.0.2.0/24"
 
 # Compute
 vm_admin_username = "azureuser"
-vm_size           = "Standard_B2s"
+vm_size           = "Standard_D2s_v3"
 
 # Ubuntu 22.04 LTS
 vm_image_publisher = "Canonical"
