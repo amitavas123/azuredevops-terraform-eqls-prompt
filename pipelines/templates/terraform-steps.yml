@@ -34,6 +34,20 @@ steps:
     displayName: "Install Terraform 1.5.0"
     timeoutInMinutes: 5
 
+  - script: |
+      echo "Direct: [$(BACKEND_RESOURCE_GROUP)]"
+      echo "Alias:  [$(backendResourceGroup)]"
+    displayName: 'Debug Backend Vars (macro syntax)'
+
+  - script: |
+      echo "EnvDirect: [$BACKEND_RESOURCE_GROUP]"
+      echo "EnvAlias:  [$backendResourceGroup]"
+    displayName: 'Debug Backend Vars (env syntax)'
+    env:
+      BACKEND_RESOURCE_GROUP: $(BACKEND_RESOURCE_GROUP)
+      backendResourceGroup: $(backendResourceGroup)
+      
+
   # Download SSH Key (only needed for plan/apply stages)
   - task: DownloadSecureFile@1
     name: sshKey
