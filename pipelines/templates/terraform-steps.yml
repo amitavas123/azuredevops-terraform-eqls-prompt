@@ -75,9 +75,6 @@ steps:
       ARM_CLIENT_ID: $(ARM_CLIENT_ID)
       ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
       ARM_TENANT_ID: $(ARM_TENANT_ID)
-      backendResourceGroup: $(BACKEND_RESOURCE_GROUP)
-      backendStorageAccount: $(BACKEND_STORAGE_ACCOUNT)
-      backendContainer: $(BACKEND_CONTAINER)
       backendKey: terraform.tfstate
 
   # Terraform Format Check
