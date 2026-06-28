@@ -83,12 +83,13 @@ stages:
                     echo "Retrieving VM outputs..."
                     VM_PUBLIC_IP=$(terraform output -raw vm_public_ip)
                     VM_ADMIN_USERNAME=$(terraform output -raw vm_admin_username)
-                    echo "##vso[task.setvariable variable=VM_PUBLIC_IP]${VM_PUBLIC_IP}"
-                    echo "##vso[task.setvariable variable=VM_ADMIN_USERNAME]${VM_ADMIN_USERNAME}"
+                    echo "##vso[task.setvariable variable=VM_PUBLIC_IP;isOutput=true]${VM_PUBLIC_IP}"
+                    echo "##vso[task.setvariable variable=VM_ADMIN_USERNAME;isOutput=true]${VM_ADMIN_USERNAME}"
                     echo "VM Public IP: ${VM_PUBLIC_IP}"
                     echo "VM Admin Username: ${VM_ADMIN_USERNAME}"
                   workingDirectory: $(terraformWorkingDirectory)
                   displayName: 'Extract Terraform Outputs'
+                  name: tfOutputs
                   env:
                     ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
                     ARM_CLIENT_ID: $(ARM_CLIENT_ID)
@@ -100,8 +101,11 @@ stages:
     displayName: 'VM Health Check'
     dependsOn: Apply
     condition: succeeded()
+    variables:
+      vmPublicIp: $[ stageDependencies.Apply.TerraformApply.outputs['TerraformApply.tfOutputs.VM_PUBLIC_IP'] ]
+      vmAdminUsername: $[ stageDependencies.Apply.TerraformApply.outputs['TerraformApply.tfOutputs.VM_ADMIN_USERNAME'] ]
     jobs:
       - template: templates/vm-health-check.yml
         parameters:
-          vmPublicIp: '$(VM_PUBLIC_IP)'
-          vmAdminUsername: '$(VM_ADMIN_USERNAME)'
+          vmPublicIp: '$(vmPublicIp)'
+          vmAdminUsername: '$(vmAdminUsername)'
