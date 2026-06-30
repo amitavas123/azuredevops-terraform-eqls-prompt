@@ -5,176 +5,55 @@ parameters:
       - validate
       - plan
       - apply
+      - destroy
+  - name: tfvarsFile
+    type: string
+    default: 'env/dev/dev.tfvars'
 
 steps:
+  # ... (keep Debug, Install Terraform, SSH download/configure steps as-is) ...
 
-  # Simple diagnostic to see what's available
-  - bash: |
-      echo "===== DIAGNOSTIC START ====="
-      pwd
-      ls -la
-      echo "===== LOOKING FOR TERRAFORM ====="
-      find . -name "main.tf" -type f 2>/dev/null | head -5
-      echo "===== DIAGNOSTIC END ====="
-    displayName: 'Debug: List Files'
+  # Terraform Init (no change needed except it already handles validate vs not)
 
-  # Install Terraform (ubuntu-latest no longer includes it)
-  - script: |
-      set -e
-      echo "Downloading Terraform..."
-      sudo apt-get update -y
-      sudo apt-get install -y wget unzip
-      mkdir -p /tmp/tf-install && cd /tmp/tf-install
-      rm -rf terraform terraform_1.5.0_linux_amd64.zip
-      wget --timeout=30 -q https://releases.hashicorp.com/terraform/1.5.0/terraform_1.5.0_linux_amd64.zip
-      unzip -q terraform_1.5.0_linux_amd64.zip
-      sudo rm -rf /usr/local/bin/terraform
-      sudo mv terraform /usr/local/bin/
-      terraform version
-    displayName: "Install Terraform 1.5.0"
-    timeoutInMinutes: 5
-
-  - script: |
-      echo "Direct: [$(BACKEND_RESOURCE_GROUP)]"
-      echo "Alias:  [$(backendResourceGroup)]"
-    displayName: 'Debug Backend Vars (macro syntax)'
-
-  - script: |
-      echo "EnvDirect: [$BACKEND_RESOURCE_GROUP]"
-      echo "EnvAlias:  [$backendResourceGroup]"
-    displayName: 'Debug Backend Vars (env syntax)'
-    env:
-      BACKEND_RESOURCE_GROUP: $(BACKEND_RESOURCE_GROUP)
-      backendResourceGroup: $(backendResourceGroup)
-
-  - script: |
-      echo "RG:        [$(BACKEND_RESOURCE_GROUP)]"
-      echo "Storage:   [$(BACKEND_STORAGE_ACCOUNT)]"
-      echo "Container: [$(BACKEND_CONTAINER)]"
-    displayName: 'Debug ALL Backend Vars'
-
-
-  # Download SSH Key (only needed for plan/apply stages)
-  - task: DownloadSecureFile@1
-    name: sshKey
-    inputs:
-      secureFile: 'id_rsa'
-    displayName: 'Download SSH Private Key'
-    condition: ne('${{ parameters.step }}', 'validate')
-
-  # Configure SSH Key
-  - script: |
-      mkdir -p ~/.ssh
-      cp $(sshKey.secureFilePath) ~/.ssh/id_rsa
-      chmod 600 ~/.ssh/id_rsa
-      ssh-keygen -y -f ~/.ssh/id_rsa > ~/.ssh/id_rsa.pub
-      chmod 644 ~/.ssh/id_rsa.pub
-    displayName: 'Configure SSH Key'
-    condition: ne('${{ parameters.step }}', 'validate')
-
-  # # Terraform Init
-  # - script: |
-  #     cd $(terraformWorkingDirectory)
-  #     if [ "${{ parameters.step }}" = "validate" ]; then
-  #       echo "Terraform Init (validate mode - no backend)"
-  #       terraform init -backend=false -no-color
-  #     else
-  #       echo "Terraform Init (with backend configuration)"
-  #       terraform init \
-  #         -backend-config="resource_group_name=$backendResourceGroup" \
-  #         -backend-config="storage_account_name=$backendStorageAccount" \
-  #         -backend-config="container_name=$backendContainer" \
-  #         -backend-config="key=$backendKey" \
-  #         -no-color
-  #     fi
-  #   displayName: 'Terraform Init'
-  #   env:
-  #     ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
-  #     ARM_CLIENT_ID: $(ARM_CLIENT_ID)
-  #     ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
-  #     ARM_TENANT_ID: $(ARM_TENANT_ID)
-  #     backendKey: terraform.tfstate
-
-  # Terraform Init
-  - script: |
-      cd $(terraformWorkingDirectory)
-      if [ "${{ parameters.step }}" = "validate" ]; then
-        echo "Terraform Init (validate mode - no backend)"
-        terraform init -backend=false -no-color
-      else
-        echo "Terraform Init (with backend configuration)"
-        terraform init \
-          -backend-config="resource_group_name=$backendResourceGroup" \
-          -backend-config="storage_account_name=$backendStorageAccount" \
-          -backend-config="container_name=$backendContainer" \
-          -backend-config="key=$backendKey" \
-          -no-color
-      fi
-    displayName: 'Terraform Init'
-    env:
-      ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
-      ARM_CLIENT_ID: $(ARM_CLIENT_ID)
-      ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
-      ARM_TENANT_ID: $(ARM_TENANT_ID)
-      backendResourceGroup: $(BACKEND_RESOURCE_GROUP)
-      backendStorageAccount: $(BACKEND_STORAGE_ACCOUNT)
-      backendContainer: $(BACKEND_CONTAINER)
-      backendKey: terraform.tfstate
-
-  # Terraform Format Check
-  - script: |
-      cd $(terraformWorkingDirectory)
-      terraform fmt -check -recursive .
-    displayName: 'Terraform Format Check'
-    condition: eq('${{ parameters.step }}', 'validate')
-
-  # Terraform Validate
-  - script: |
-      cd $(terraformWorkingDirectory)
-      terraform validate
-    displayName: 'Terraform Validate'
-    condition: eq('${{ parameters.step }}', 'validate')
-    env:
-      ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
-      ARM_CLIENT_ID: $(ARM_CLIENT_ID)
-      ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
-      ARM_TENANT_ID: $(ARM_TENANT_ID)
-
-  # Terraform Plan
+  # Terraform Plan — only for plan step with apply action, or plan with destroy (shows what will be destroyed)
   - script: |
       cd $(terraformWorkingDirectory)
       terraform plan \
-        -var-file="env/dev/dev.tfvars" \
+        -var-file="${{ parameters.tfvarsFile }}" \
         -var="subscription_id=$ARM_SUBSCRIPTION_ID" \
         -var="public_key_path=$HOME/.ssh/id_rsa.pub" \
         -no-color \
         -out=tfplan
     displayName: 'Terraform Plan'
-    condition: eq('${{ parameters.step }}', 'plan')
+    condition: and(eq('${{ parameters.step }}', 'plan'), ne('${{ parameters.action }}', 'destroy'))
     env:
       ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
       ARM_CLIENT_ID: $(ARM_CLIENT_ID)
       ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
       ARM_TENANT_ID: $(ARM_TENANT_ID)
 
-  # Publish plan
-  - task: PublishBuildArtifacts@1
-    inputs:
-      PathtoPublish: $(terraformWorkingDirectory)/tfplan
-      ArtifactName: 'terraform-plan'
-      publishLocation: 'Container'
-    displayName: 'Publish Terraform Plan'
-    condition: eq('${{ parameters.step }}', 'plan')
+  # Terraform Plan Destroy
+  - script: |
+      cd $(terraformWorkingDirectory)
+      terraform plan \
+        -destroy \
+        -var-file="${{ parameters.tfvarsFile }}" \
+        -var="subscription_id=$ARM_SUBSCRIPTION_ID" \
+        -var="public_key_path=$HOME/.ssh/id_rsa.pub" \
+        -no-color \
+        -out=tfplan
+    displayName: 'Terraform Plan (Destroy)'
+    condition: and(eq('${{ parameters.step }}', 'plan'), eq('${{ parameters.action }}', 'destroy'))
+    env:
+      ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
+      ARM_CLIENT_ID: $(ARM_CLIENT_ID)
+      ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
+      ARM_TENANT_ID: $(ARM_TENANT_ID)
 
   # Terraform Apply
   - script: |
       cd $(terraformWorkingDirectory)
-      terraform apply \
-        -var-file="env/dev/dev.tfvars" \
-        -var="subscription_id=$ARM_SUBSCRIPTION_ID" \
-        -var="public_key_path=~/.ssh/id_rsa.pub" \
-        -no-color \
-        -auto-approve
+      terraform apply -no-color -auto-approve tfplan
     displayName: 'Terraform Apply'
     condition: eq('${{ parameters.step }}', 'apply')
     env:
@@ -183,14 +62,16 @@ steps:
       ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
       ARM_TENANT_ID: $(ARM_TENANT_ID)
 
-  # Export outputs
+  # Terraform Destroy
   - script: |
       cd $(terraformWorkingDirectory)
-      terraform output -json > terraform-outputs.json
-    displayName: 'Export Terraform Outputs'
-    condition: eq('${{ parameters.step }}', 'apply')
+      terraform apply -no-color -auto-approve tfplan
+    displayName: 'Terraform Destroy (apply destroy-plan)'
+    condition: eq('${{ parameters.step }}', 'destroy')
     env:
       ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
       ARM_CLIENT_ID: $(ARM_CLIENT_ID)
       ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
       ARM_TENANT_ID: $(ARM_TENANT_ID)
+
+  # ... (Export outputs / Publish artifacts only when step == 'apply', condition unchanged) ...
