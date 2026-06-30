@@ -23,14 +23,23 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  terraformWorkingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
-  backendResourceGroup: '$(BACKEND_RESOURCE_GROUP)'
-  backendStorageAccount: '$(BACKEND_STORAGE_ACCOUNT)'
-  backendContainer: '$(BACKEND_CONTAINER)'
-  backendKey: 'terraform-${{ parameters.environment }}.tfstate'
-  terraformVersion: '1.5.0'
-  environment: '${{ parameters.environment }}'
-  tfvarsFile: 'env/${{ parameters.environment }}/${{ parameters.environment }}.tfvars'
+  - group: 'New variable group 24-Jun'
+  - name: terraformWorkingDirectory
+    value: '$(System.DefaultWorkingDirectory)/terraform'
+  - name: backendResourceGroup
+    value: '$(BACKEND_RESOURCE_GROUP)'
+  - name: backendStorageAccount
+    value: '$(BACKEND_STORAGE_ACCOUNT)'
+  - name: backendContainer
+    value: '$(BACKEND_CONTAINER)'
+  - name: backendKey
+    value: 'terraform-${{ parameters.environment }}.tfstate'
+  - name: terraformVersion
+    value: '1.5.0'
+  - name: environment
+    value: '${{ parameters.environment }}'
+  - name: tfvarsFile
+    value: 'env/${{ parameters.environment }}/${{ parameters.environment }}.tfvars'
 
 stages:
   # Stage 1: Validate and Format Check
