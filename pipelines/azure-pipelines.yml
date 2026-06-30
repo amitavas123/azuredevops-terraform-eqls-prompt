@@ -44,6 +44,7 @@ stages:
           - template: templates/terraform-steps.yml
             parameters:
               step: 'validate'
+              action: '${{ parameters.action }}'
               tfvarsFile: '${{ variables.tfvarsFile }}'
 
   # Stage 2: Plan

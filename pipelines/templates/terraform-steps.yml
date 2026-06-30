@@ -9,6 +9,12 @@ parameters:
   - name: tfvarsFile
     type: string
     default: 'env/dev/dev.tfvars'
+  - name: action
+    type: string
+    default: 'apply'
+    values:
+      - apply
+      - destroy
 
 steps:
   # ... (keep Debug, Install Terraform, SSH download/configure steps as-is) ...
