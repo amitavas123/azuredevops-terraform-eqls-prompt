@@ -117,5 +117,5 @@ stages:
     jobs:
       - template: templates/vm-health-check.yml
         parameters:
-          vmPublicIp: '$[ stageDependencies.Apply.TerraformApply.outputs[''TerraformApply.tfOutputs.VM_PUBLIC_IP''] ]'
-          vmAdminUsername: '$[ stageDependencies.Apply.TerraformApply.outputs[''TerraformApply.tfOutputs.VM_ADMIN_USERNAME''] ]'
+          vmPublicIp: '$[ stageDependencies.Apply.TerraformApply.outputs[''tfOutputs.VM_PUBLIC_IP''] ]'
+          vmAdminUsername: '$[ stageDependencies.Apply.TerraformApply.outputs[''tfOutputs.VM_ADMIN_USERNAME''] ]'

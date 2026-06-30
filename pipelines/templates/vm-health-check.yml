@@ -9,6 +9,11 @@ jobs:
           secureFile: 'id_rsa'
         displayName: 'Download SSH Private Key'
 
+      - script: |
+          echo "IP=[${{ parameters.vmPublicIp }}]"
+          echo "User=[${{ parameters.vmAdminUsername }}]"
+        displayName: 'Debug Health Check Params'
+
       # Setup SSH key permissions
       - script: |
           mkdir -p ~/.ssh
