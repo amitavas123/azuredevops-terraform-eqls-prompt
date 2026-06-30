@@ -151,6 +151,22 @@ steps:
     displayName: 'Publish Terraform Plan'
     condition: eq('${{ parameters.step }}', 'plan')
 
+  # Download the plan artifact before applying/destroying
+  - task: DownloadBuildArtifacts@1
+    inputs:
+      buildType: 'current'
+      downloadType: 'single'
+      artifactName: 'terraform-plan'
+      downloadPath: '$(System.ArtifactsDirectory)'
+    displayName: 'Download Terraform Plan'
+    condition: or(eq('${{ parameters.step }}', 'apply'), eq('${{ parameters.step }}', 'destroy'))
+
+  # Move the downloaded plan into the terraform working directory
+  - script: |
+      cp $(System.ArtifactsDirectory)/terraform-plan/tfplan $(terraformWorkingDirectory)/tfplan
+    displayName: 'Move Plan File'
+    condition: or(eq('${{ parameters.step }}', 'apply'), eq('${{ parameters.step }}', 'destroy'))
+
   # Terraform Apply
   - script: |
       cd $(terraformWorkingDirectory)
