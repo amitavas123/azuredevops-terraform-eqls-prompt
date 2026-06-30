@@ -33,11 +33,12 @@ jobs:
       # Wait for VM to be ready (with retries)
       - script: |
           echo "Waiting for VM to be ready..."
-          MAX_RETRIES=30
+          MAX_RETRIES=3
           RETRY_COUNT=0
           
           while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            if ssh -o ConnectTimeout=5 -o StrictHostKeyChecking=no ${{ parameters.vmAdminUsername }}@${{ parameters.vmPublicIp }} "echo 'VM is ready'" > /dev/null 2>&1; then
+            ssh -v -o ConnectTimeout=5 -o StrictHostKeyChecking=no ${{ parameters.vmAdminUsername }}@${{ parameters.vmPublicIp }} "echo 'VM is ready'"
+            if [ $? -eq 0 ]; then
               echo "VM is ready for configuration"
               exit 0
             fi
