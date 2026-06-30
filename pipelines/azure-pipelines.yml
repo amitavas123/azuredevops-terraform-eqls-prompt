@@ -109,13 +109,16 @@ stages:
                       ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
                       ARM_TENANT_ID: $(ARM_TENANT_ID)
 
-  # Stage 4: VM Health Check (only runs on apply, never on destroy)
+  # Stage 4: VM Health Check (only runs on apply, never on destroy)  
   - stage: VMHealthCheck
     displayName: 'VM Health Check'
     dependsOn: Apply
     condition: and(succeeded(), eq('${{ parameters.action }}', 'apply'))
+    variables:
+      vmPublicIp: $[ stageDependencies.Apply.TerraformApply.outputs['tfOutputs.VM_PUBLIC_IP'] ]
+      vmAdminUsername: $[ stageDependencies.Apply.TerraformApply.outputs['tfOutputs.VM_ADMIN_USERNAME'] ]
     jobs:
       - template: templates/vm-health-check.yml
         parameters:
-          vmPublicIp: '$[ stageDependencies.Apply.TerraformApply.outputs[''tfOutputs.VM_PUBLIC_IP''] ]'
-          vmAdminUsername: '$[ stageDependencies.Apply.TerraformApply.outputs[''tfOutputs.VM_ADMIN_USERNAME''] ]'
+          vmPublicIp: '$(vmPublicIp)'
+          vmAdminUsername: '$(vmAdminUsername)'        
