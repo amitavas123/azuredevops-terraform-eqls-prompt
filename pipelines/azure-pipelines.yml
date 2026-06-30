@@ -64,7 +64,7 @@ stages:
 
   # Stage 3: Apply or Destroy
   - stage: Apply
-    displayName: '${{ parameters.action == ''destroy'' && ''Terraform Destroy'' || ''Terraform Apply'' }}'
+    displayName: 'Terraform ${{ parameters.action }}'
     dependsOn: Plan
     condition: succeeded()
     jobs:
